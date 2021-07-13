@@ -120,17 +120,12 @@ class ChatArchive(SchemaManager):
         return parse_path(os.environ.get("CHAT_ARCHIVE_DIRECTORY", "~/.local/share/chat-archive"))
 
     @mutable_property
-    def database_file(self):
-        """
-        The absolute pathname of the SQLite_ database file (a string).
-
-        This defaults to ``~/.local/share/chat-archive/database.sqlite3`` (with
-        ``~`` expanded to the home directory of the current user) based on
-        :attr:`data_directory`.
-
-        .. _SQLite: https://sqlite.org/
-        """
-        return os.path.join(self.data_directory, "database.sqlite3")
+    def database_url(self):
+        """URL for database."""
+        database_url = self.config.get('database-url')
+        if database_url:
+            return database_url
+        return 'sqlite:///%s' % os.path.join(self.data_directory, "database.sqlite3")
 
     @mutable_property
     def force(self):

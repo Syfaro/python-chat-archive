@@ -54,7 +54,10 @@ class TelegramBackend(ChatArchiveBackend):
         the name of a secret in ``~/.password-store`` instead.
         """
         return get_secret(
-            options=self.config, value_option="api-hash", name_option="api-hash-name", description="Telegram API hash"
+            options=self.config,
+            value_option="api-hash",
+            name_option="api-hash-name",
+            description="Telegram API hash",
         )
 
     @required_property
@@ -74,7 +77,10 @@ class TelegramBackend(ChatArchiveBackend):
         """
         return int(
             get_secret(
-                options=self.config, value_option="api-id", name_option="api-id-name", description="Telegram API ID"
+                options=self.config,
+                value_option="api-id",
+                name_option="api-id-name",
+                description="Telegram API ID",
             )
         )
 
@@ -109,7 +115,7 @@ class TelegramBackend(ChatArchiveBackend):
             if not self.dialog_to_ignore(dialog):
                 is_group_conversation = self.is_group_conversation(dialog)
                 conversation_in_db = self.get_or_create_conversation(
-                    external_id=dialog.id,
+                    external_id=str(dialog.id),
                     is_group_conversation=is_group_conversation,
                     last_modified=dialog.date,
                     # In Telegram the name of a private chat is the name of
@@ -121,7 +127,9 @@ class TelegramBackend(ChatArchiveBackend):
                 )
                 if not conversation_in_db.import_complete:
                     await self.perform_initial_sync(dialog, conversation_in_db)
-                elif strip_tzinfo(dialog.date) > strip_tzinfo(conversation_in_db.last_modified):
+                elif strip_tzinfo(dialog.date) > strip_tzinfo(
+                    conversation_in_db.last_modified
+                ):
                     logger.info("Conversation was updated (%s) ..", dialog.id)
                     await self.update_conversation(dialog, conversation_in_db)
                     conversation_in_db.last_modified = dialog.date
@@ -146,10 +154,15 @@ class TelegramBackend(ChatArchiveBackend):
             logger.verbose("Skipping service dialog (%s) ..", dialog.id)
             return True
         elif self.is_duplicate_dialog(dialog):
-            logger.verbose("Skipping dialog that is part of a different Telegram account (%s) ..", dialog.id)
+            logger.verbose(
+                "Skipping dialog that is part of a different Telegram account (%s) ..",
+                dialog.id,
+            )
             return True
         else:
-            logger.verbose("Dialog not ignored, proceeding with synchronization (%s) ..", dialog.id)
+            logger.verbose(
+                "Dialog not ignored, proceeding with synchronization (%s) ..", dialog.id
+            )
             return False
 
     def is_duplicate_dialog(self, dialog):
@@ -168,17 +181,25 @@ class TelegramBackend(ChatArchiveBackend):
 
     def is_service_dialog(self, dialog):
         """Check if the given dialog is the dialog with the "Telegram" user, containing service messages."""
-        return dialog.is_user and dialog.entity.first_name == "Telegram" and not dialog.entity.last_name
+        return (
+            dialog.is_user
+            and dialog.entity.first_name == "Telegram"
+            and not dialog.entity.last_name
+        )
 
     async def perform_initial_sync(self, dialog, conversation_in_db):
         """Start or resume the initial synchronization."""
         options = dict()
         oldest_message = conversation_in_db.oldest_message
         if oldest_message:
-            logger.info("Resuming initial synchronization of conversation %s ..", dialog.id)
+            logger.info(
+                "Resuming initial synchronization of conversation %s ..", dialog.id
+            )
             options["max_id"] = int(oldest_message.external_id)
         else:
-            logger.info("Starting initial synchronization of conversation %s ..", dialog.id)
+            logger.info(
+                "Starting initial synchronization of conversation %s ..", dialog.id
+            )
         if dialog.is_user:
             # TODO Would it be better to explicitly associate contacts to conversations?
             self.sender_to_contact(dialog.entity)
@@ -199,7 +220,7 @@ class TelegramBackend(ChatArchiveBackend):
             if message.message:
                 self.get_or_create_message(
                     conversation=conversation_in_db,
-                    external_id=message.id,
+                    external_id=str(message.id),
                     html=unparse(message.message, message.entities),
                     recipient=self.recipient_to_contact(message.to_id),
                     sender=self.sender_to_contact(message.sender),
@@ -213,9 +234,16 @@ class TelegramBackend(ChatArchiveBackend):
     def sender_to_contact(self, user):
         """Create a contact in our local database for the given Telegram user."""
         return self.get_or_create_contact(
-            external_id=user.id, first_name=user.first_name, last_name=user.last_name, telephone_number=user.phone
+            external_id=str(user.id),
+            first_name=user.first_name,
+            last_name=user.last_name,
+            telephone_number=user.phone,
         )
 
     def recipient_to_contact(self, to_id):
         """Create a contact in our local database for the given ``to_id`` value."""
-        return self.find_contact_by_external_id(to_id.user_id) if hasattr(to_id, "user_id") else None
+        return (
+            self.find_contact_by_external_id(str(to_id.user_id))
+            if hasattr(to_id, "user_id")
+            else None
+        )

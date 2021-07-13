@@ -265,11 +265,10 @@ class UserInterface(ChatArchive):
 
     def stats_cmd(self, arguments):
         """Show some statistics about the local chat archive."""
-        logger.info("Statistics about %s:", format_path(self.database_file))
+        logger.info("Statistics about database")
         logger.info(" - Number of contacts: %i", self.num_contacts)
         logger.info(" - Number of conversations: %i", self.num_conversations)
         logger.info(" - Number of messages: %i", self.num_messages)
-        logger.info(" - Database file size: %s", format_size(os.path.getsize(self.database_file)))
         logger.info(
             " - Size of %s: %s",
             pluralize(self.num_messages, "plain text chat message"),

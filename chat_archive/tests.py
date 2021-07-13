@@ -41,7 +41,7 @@ class ChatArchiveTestCase(TestCase):
     """Container for the `chat-archive` tests."""
 
     def get_test_archive(self):
-        return ChatArchive(database_file=':memory:')
+        return ChatArchive(database_url='sqlite:///:memory:')
 
     def test_expand_url(self):
         """Test the :func:`~chat_archive.html.redirects.expand_url()` function."""

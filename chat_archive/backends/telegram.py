@@ -188,30 +188,41 @@ class TelegramBackend(ChatArchiveBackend):
 
     async def update_conversation(self, dialog, conversation_in_db):
         """Download new messages in an existing conversation."""
-        min_id = int(conversation_in_db.newest_message.external_id)
+        if conversation_in_db.newest_message:
+            min_id = int(conversation_in_db.newest_message.external_id)
+        else:
+            min_id = 0
+        if dialog.message and dialog.message.id == min_id:
+            logger.info("Conversation %s is already up to date, skipping ..", dialog.id)
+            return
         await self.download_messages(dialog, conversation_in_db, min_id=min_id)
 
     async def download_messages(self, dialog, conversation_in_db, min_id=0, max_id=0):
         """Download messages in the given conversation."""
         options = dict(max_id=max_id, min_id=min_id)
-        async for message in self.client.iter_messages(dialog, **options):
-            # Ignore service messages like `User X was added to chat Y'.
-            if message.message:
-                self.get_or_create_message(
-                    conversation=conversation_in_db,
-                    external_id=message.id,
-                    html=unparse(message.message, message.entities),
-                    recipient=self.recipient_to_contact(message.to_id),
-                    sender=self.sender_to_contact(message.sender),
-                    text=message.message,
-                    timestamp=message.date,
-                )
-                # Commit changes to disk every now and then.
-                if self.stats.messages_added % 100 == 0:
-                    self.archive.commit_changes()
+        # Using a takeout session allows skipping wait time.
+        async with self.client.takeout() as takeout:
+            async for message in takeout.iter_messages(dialog, wait_time=0, **options):
+                # Ignore service messages like `User X was added to chat Y'.
+                if message.message:
+                    self.get_or_create_message(
+                        conversation=conversation_in_db,
+                        external_id=message.id,
+                        html=unparse(message.message, message.entities),
+                        recipient=self.recipient_to_contact(message.to_id),
+                        sender=self.sender_to_contact(message.sender),
+                        text=message.message,
+                        timestamp=message.date,
+                    )
+                    # Commit changes to disk every now and then.
+                    if self.stats.messages_added % 100 == 0:
+                        self.archive.commit_changes()
 
     def sender_to_contact(self, user):
         """Create a contact in our local database for the given Telegram user."""
+        if not user or not hasattr(user, 'first_name'):
+            # It's possible for senders to not be users.
+            return None
         return self.get_or_create_contact(
             external_id=user.id, first_name=user.first_name, last_name=user.last_name, telephone_number=user.phone
         )

@@ -41,30 +41,11 @@ class DatabaseClient(ProfileManager):
         documentation for details about the handling of arguments.
         """
         super(DatabaseClient, self).__init__(*args, **kw)
-        if self.database_file:
-            ensure_directory_exists(os.path.dirname(self.database_file))
 
     @lazy_property
     def database_engine(self):
         """An SQLAlchemy database engine connected to :attr:`database_url`."""
         return create_engine(self.database_url, echo=self.echo_queries)
-
-    @writable_property
-    def database_file(self):
-        """The absolute pathname of an SQLite database file (a string or :data:`None`)."""
-
-    @required_property
-    def database_url(self):
-        """
-        A URL that indicates the database dialect and connection arguments to SQLAlchemy (a string).
-
-        The value of :attr:`database_url` defaults to a URL that instructs
-        SQLAlchemy to use an SQLite 3 database file located at the pathname
-        given by :attr:`database_file`, but of course you are free to point
-        SQLAlchemy to any supported database server.
-        """
-        if self.database_file:
-            return "sqlite:///%s" % self.database_file
 
     @writable_property
     def echo_queries(self):

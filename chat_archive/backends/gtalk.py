@@ -48,7 +48,12 @@ import xml.etree.ElementTree
 
 # External dependencies.
 from humanfriendly import Timer, format, format_path, pluralize
-from property_manager import PropertyManager, lazy_property, mutable_property, required_property
+from property_manager import (
+    PropertyManager,
+    lazy_property,
+    mutable_property,
+    required_property,
+)
 from verboselogs import VerboseLogger
 
 # Modules included in our package.
@@ -63,7 +68,9 @@ FRIENDLY_NAME = "Google Talk"
 NAMESPACED_TAG_PATTERN = re.compile(r"^{[^}]+}(\S+)$")
 """Compiled regular expression to match XML tag names with a name space."""
 
-BOGUS_EMAIL_PATTERN = re.compile(r"^private-chat(-[0-9a-f]+)+@groupchat.google.com$", re.IGNORECASE)
+BOGUS_EMAIL_PATTERN = re.compile(
+    r"^private-chat(-[0-9a-f]+)+@groupchat.google.com$", re.IGNORECASE
+)
 """Compiled regular expression to recognize private messages in group conversations."""
 
 
@@ -141,7 +148,11 @@ class GoogleTalkBackend(ChatArchiveBackend):
                 summary.append("importing %s" % pluralize(len(to_import), "email"))
             logger.info("%s ..", ", ".join(summary).capitalize())
             for i, uid in enumerate(sorted(to_process), start=1):
-                logger.info("Processing email with UID %s (%.2f%%) ..", uid, i / (len(to_process) / 100.0))
+                logger.info(
+                    "Processing email with UID %s (%.2f%%) ..",
+                    uid,
+                    i / (len(to_process) / 100.0),
+                )
                 email = self.get_email_body(uid)
                 if email.parsed_body:
                     with self.stats:
@@ -150,7 +161,9 @@ class GoogleTalkBackend(ChatArchiveBackend):
                         else:
                             self.parse_singlepart_email(email)
                 else:
-                    logger.verbose("Skipping conversation %s with empty mail body.", uid)
+                    logger.verbose(
+                        "Skipping conversation %s with empty mail body.", uid
+                    )
                 self.archive.commit_changes()
         else:
             logger.info("Nothing to do! (no new messages)")
@@ -168,7 +181,9 @@ class GoogleTalkBackend(ChatArchiveBackend):
         """Select the IMAP folder with chat messages."""
         logger.verbose("Selecting %r folder ..", self.chats_folder)
         response = self.client.select(self.chats_folder, readonly=True)
-        self.check_response(response, "Failed to select chats folder! (%s)", self.chats_folder)
+        self.check_response(
+            response, "Failed to select chats folder! (%s)", self.chats_folder
+        )
 
     def find_uids_to_download(self):
         """Determine the UIDs of the email messages to be downloaded."""
@@ -199,7 +214,11 @@ class GoogleTalkBackend(ChatArchiveBackend):
             "Found %s, %s and %s (took %s).",
             pluralize(len(local_uids), "local conversation"),
             pluralize(len(remote_uids), "remote conversation"),
-            pluralize(len(missing_uids), "conversation to download", "conversations to download"),
+            pluralize(
+                len(missing_uids),
+                "conversation to download",
+                "conversations to download",
+            ),
             timer,
         )
         return missing_uids
@@ -218,7 +237,9 @@ class GoogleTalkBackend(ChatArchiveBackend):
 
     def get_email_body(self, uid):
         """Get the body of an email from the local cache or the server."""
-        local_copy = os.path.join(self.archive.data_directory, "gtalk", self.account_name, "%i.eml" % uid)
+        local_copy = os.path.join(
+            self.archive.data_directory, "gtalk", self.account_name, "%i.eml" % uid
+        )
         formatted_path = format_path(local_copy)
         if os.path.isfile(local_copy):
             logger.verbose("Reading email with UID %s from %s ..", uid, formatted_path)
@@ -227,7 +248,9 @@ class GoogleTalkBackend(ChatArchiveBackend):
         else:
             logger.verbose("Downloading email with UID %s to ..", uid, formatted_path)
             response = self.client.uid("fetch", str(uid), "(RFC822)")
-            data = self.check_response(response, "Failed to download conversation with UID %s!", uid)
+            data = self.check_response(
+                response, "Failed to download conversation with UID %s!", uid
+            )
             raw_body = data[0][1].decode("ascii")
             with open(local_copy, "w") as handle:
                 handle.write(raw_body)
@@ -261,13 +284,17 @@ class GoogleTalkBackend(ChatArchiveBackend):
 
     def parse_multipart_email(self, email):
         """Find the ``text/xml`` payload in an RFC 822 multi-part email message."""
-        conversation = self.get_or_create_conversation(external_id=email.uid, last_modified=email.timestamp)
+        conversation = self.get_or_create_conversation(
+            external_id=email.uid, last_modified=email.timestamp
+        )
         # Delete any existing messages in the conversation
         # so that repeated importing of the email doesn't
         # create duplicate messages.
         conversation.delete_messages()
         # Now we're ready to import the embedded messages.
-        logger.verbose("Parsing multi-part email with UID %s ..", conversation.external_id)
+        logger.verbose(
+            "Parsing multi-part email with UID %s ..", conversation.external_id
+        )
         for nested_message in email.parsed_body.get_payload():
             nested_payload = nested_message.get_payload(decode=True)
             content_type = nested_message.get_content_type()
@@ -292,19 +319,33 @@ class GoogleTalkBackend(ChatArchiveBackend):
                     timestamp=self.extract_timestamp(message_node),
                 )
                 logger.verbose(
-                    "Importing XML message node with body text %r:\n%s", node_text, LazyXMLFormatter(message_node)
+                    "Importing XML message node with body text %r:\n%s",
+                    node_text,
+                    LazyXMLFormatter(message_node),
                 )
                 if message_node.attrib.get("type") == "groupchat":
                     conversation.is_group_conversation = True
                     if message_node.attrib.get("jid"):
-                        logger.verbose("Importing group message based on 'jid' attribute ..")
-                        attributes["sender"] = self.contact_from_jid(message_node.attrib["jid"])
+                        logger.verbose(
+                            "Importing group message based on 'jid' attribute .."
+                        )
+                        attributes["sender"] = self.contact_from_jid(
+                            message_node.attrib["jid"]
+                        )
                     elif message_node.attrib.get("from"):
-                        logger.verbose("Importing group message based on 'from' attribute ('jid' not available) ..")
-                        attributes["sender"] = self.contact_from_jid(message_node.attrib["from"])
+                        logger.verbose(
+                            "Importing group message based on 'from' attribute ('jid' not available) .."
+                        )
+                        attributes["sender"] = self.contact_from_jid(
+                            message_node.attrib["from"]
+                        )
                     else:
-                        logger.warning("Importing group message without sender information ..")
-                elif conversation.is_group_conversation and message_node.attrib.get("jid"):
+                        logger.warning(
+                            "Importing group message without sender information .."
+                        )
+                elif conversation.is_group_conversation and message_node.attrib.get(
+                    "jid"
+                ):
                     # This is a somewhat weird edge case that I encountered in
                     # a group conversation from 2011 whose IMAP representation
                     # contained mostly group messages, but also some private
@@ -314,13 +355,25 @@ class GoogleTalkBackend(ChatArchiveBackend):
                     # using the in:chat label renders these messages wrong. I
                     # actually looked into personal laptop backups from 2011 to
                     # verify my recollection of how that conversation went :-).
-                    logger.verbose("Importing private message in group conversation based on 'jid' attribute ..")
-                    attributes["sender"] = self.contact_from_jid(message_node.attrib["jid"])
-                    attributes["recipient"] = self.contact_from_jid(message_node.attrib["to"])
+                    logger.verbose(
+                        "Importing private message in group conversation based on 'jid' attribute .."
+                    )
+                    attributes["sender"] = self.contact_from_jid(
+                        message_node.attrib["jid"]
+                    )
+                    attributes["recipient"] = self.contact_from_jid(
+                        message_node.attrib["to"]
+                    )
                 else:
-                    logger.verbose("Importing private message based on 'from' and 'to' attributes ..")
-                    attributes["sender"] = self.contact_from_jid(message_node.attrib["from"])
-                    attributes["recipient"] = self.contact_from_jid(message_node.attrib["to"])
+                    logger.verbose(
+                        "Importing private message based on 'from' and 'to' attributes .."
+                    )
+                    attributes["sender"] = self.contact_from_jid(
+                        message_node.attrib["from"]
+                    )
+                    attributes["recipient"] = self.contact_from_jid(
+                        message_node.attrib["to"]
+                    )
                 self.get_or_create_message(**attributes)
 
     def find_conversation(self, *participants):
@@ -363,7 +416,9 @@ class GoogleTalkBackend(ChatArchiveBackend):
                 if match:
                     nested_node.tag = match.group(1)
             # Render the <html> element and its children to a binary string.
-            binary_html = xml.etree.ElementTree.tostring(html_node, encoding="utf-8", method="html")
+            binary_html = xml.etree.ElementTree.tostring(
+                html_node, encoding="utf-8", method="html"
+            )
             # Decode and sanitize the binary string.
             return binary_html.decode("utf-8")
 
@@ -381,25 +436,33 @@ class GoogleTalkBackend(ChatArchiveBackend):
                 # we can try to make an educated guess...
                 tokens = re.split(r"\W+", components[1])
                 return self.contact_from_keywords(tokens)
-            logger.verbose("Translated JID (%s) to email address: %s", value, components[0])
+            logger.verbose(
+                "Translated JID (%s) to email address: %s", value, components[0]
+            )
             value = components[0]
         return self.get_or_create_contact(email_address=value)
 
     def contact_from_keywords(self, keywords):
         """Try to find a unique contact based on the given keywords."""
         logger.verbose("Looking up contact based on keywords (%s) ..", keywords)
-        query = self.session.query(Contact).outerjoin((EmailAddress, Contact.email_addresses))
+        query = self.session.query(Contact).outerjoin(
+            (EmailAddress, Contact.email_addresses)
+        )
         for kw in keywords:
             pattern = "%" + kw + "%"
             query = query.filter(
-                Contact.first_name.like(pattern) | Contact.last_name.like(pattern) | EmailAddress.value.like(pattern)
+                Contact.first_name.like(pattern)
+                | Contact.last_name.like(pattern)
+                | EmailAddress.value.like(pattern)
             )
         if query.count() == 1:
             contact = query.first()
             logger.verbose("Lookup successful, found exactly one contact: %s", contact)
             return contact
         logger.notice(
-            "Failed to lookup sender/recipient of private message" " in group chat based on keywords! (%s)", keywords
+            "Failed to lookup sender/recipient of private message"
+            " in group chat based on keywords! (%s)",
+            keywords,
         )
 
     def contact_from_header(self, value):

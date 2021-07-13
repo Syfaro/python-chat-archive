@@ -21,7 +21,14 @@ from verboselogs import VerboseLogger
 
 # Modules included in our package.
 from chat_archive.html.redirects import RedirectStripper, strip_redirects
-from chat_archive.models import Account, Contact, Conversation, EmailAddress, Message, TelephoneNumber
+from chat_archive.models import (
+    Account,
+    Contact,
+    Conversation,
+    EmailAddress,
+    Message,
+    TelephoneNumber,
+)
 
 # Initialize a logger for this module.
 logger = VerboseLogger(__name__)
@@ -210,7 +217,10 @@ class ChatArchiveBackend(PropertyManager):
         # to 'telephone_numbers' as a convenience to callers that don't have
         # multiple email addresses or telephone numbers per contact (they can
         # just use the singular form and ignore the plural form).
-        for singular, plural in (("email_address", "email_addresses"), ("telephone_number", "telephone_numbers")):
+        for singular, plural in (
+            ("email_address", "email_addresses"),
+            ("telephone_number", "telephone_numbers"),
+        ):
             if singular in attributes:
                 singular_value = attributes.pop(singular)
                 collection = attributes.setdefault(plural, [])
@@ -281,7 +291,9 @@ class ChatArchiveBackend(PropertyManager):
         :returns: Refer to :func:`get_or_create_object()`.
         """
         created, object = self.get_or_create_object(
-            model=Conversation, required=dict(account=self.account, external_id=str(external_id)), optional=attributes
+            model=Conversation,
+            required=dict(account=self.account, external_id=str(external_id)),
+            optional=attributes,
         )
         if created:
             logger.info("Importing %s ..", object)
@@ -306,10 +318,15 @@ class ChatArchiveBackend(PropertyManager):
             # Fall back to a lookup by sender and timestamp.
             required["sender"] = attributes.pop("sender")
             required["timestamp"] = attributes.pop("timestamp")
-        created, object = self.get_or_create_object(model=Message, required=required, optional=attributes)
+        created, object = self.get_or_create_object(
+            model=Message, required=required, optional=attributes
+        )
         if created:
             logger.info(
-                "Importing message by %s on %s: %s", object.sender, object.timestamp.strftime("%Y-%m-%d"), object.text
+                "Importing message by %s on %s: %s",
+                object.sender,
+                object.timestamp.strftime("%Y-%m-%d"),
+                object.text,
             )
             self.stats.messages_added += 1
         return created, object
@@ -321,7 +338,9 @@ class ChatArchiveBackend(PropertyManager):
         :param email_address: The email address (a string).
         :returns: An :class:`.EmailAddress` object.
         """
-        created, object = self.get_or_create_object(model=EmailAddress, required=dict(value=email_address))
+        created, object = self.get_or_create_object(
+            model=EmailAddress, required=dict(value=email_address)
+        )
         if created:
             logger.info("Importing %s", object)
             self.stats.email_addresses_added += 1
@@ -365,7 +384,9 @@ class ChatArchiveBackend(PropertyManager):
         :param telephone_number: The telephone number (a string containing a number).
         :returns: A :class:`.TelephoneNumber` object.
         """
-        created, object = self.get_or_create_object(model=TelephoneNumber, required=dict(value=telephone_number))
+        created, object = self.get_or_create_object(
+            model=TelephoneNumber, required=dict(value=telephone_number)
+        )
         if created:
             logger.info("Importing %s", object)
             self.stats.telephone_numbers_added += 1

@@ -33,7 +33,9 @@ A list of strings with HTML tags that are considered block-level elements. The
 element that it encounters.
 """
 
-URL_PATTERN = re.compile("(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)")
+URL_PATTERN = re.compile(
+    "(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)"
+)
 """
 A compiled regular expression pattern to find URLs in text
 (credit: taken from `urlregex.com <http://urlregex.com/>`_).
@@ -112,7 +114,9 @@ class HTMLStripper(html.parser.HTMLParser):
 
         :param value: The decimal or hexadecimal value (a string).
         """
-        self.output.write(chr(int(value[1:], 16) if value.startswith("x") else int(value)))
+        self.output.write(
+            chr(int(value[1:], 16) if value.startswith("x") else int(value))
+        )
 
     def handle_data(self, data):
         """Capture decoded text data."""

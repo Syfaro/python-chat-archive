@@ -19,7 +19,19 @@ the `chat-archive` program:
 """
 
 # External dependencies.
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, MetaData, String, Table, UnicodeText, func
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    UnicodeText,
+    func,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
@@ -99,7 +111,9 @@ class Account(Base):
         :attr:`backend`, :data:`False` otherwise.
         """
         session = Session.object_session(self)
-        count_query = session.query(func.count(Account.id)).filter(Account.backend == self.backend)
+        count_query = session.query(func.count(Account.id)).filter(
+            Account.backend == self.backend
+        )
         return count_query.scalar() > 1
 
     def __repr__(self):
@@ -180,13 +194,19 @@ class Contact(Base):
     email_addresses = relationship(EmailAddress, secondary=address_mapping)
     """The email addresses of this contact."""
 
-    telephone_numbers = relationship(TelephoneNumber, secondary=telephone_number_mapping)
+    telephone_numbers = relationship(
+        TelephoneNumber, secondary=telephone_number_mapping
+    )
     """The telephone numbers of this contact."""
 
-    sent_messages = relationship("Message", back_populates="sender", foreign_keys="Message.sender_id")
+    sent_messages = relationship(
+        "Message", back_populates="sender", foreign_keys="Message.sender_id"
+    )
     """The chat messages that were sent by this contact."""
 
-    received_messages = relationship("Message", back_populates="recipient", foreign_keys="Message.recipient_id")
+    received_messages = relationship(
+        "Message", back_populates="recipient", foreign_keys="Message.recipient_id"
+    )
     """The chat messages that were received by this contact."""
 
     @property
@@ -196,7 +216,11 @@ class Contact(Base):
             first_name = func.coalesce(Contact.first_name, "")
             last_name = func.coalesce(Contact.last_name, "")
             full_name = first_name + " " + last_name
-            query = Session.object_session(self).query(full_name).filter(Contact.first_name == self.first_name)
+            query = (
+                Session.object_session(self)
+                .query(full_name)
+                .filter(Contact.first_name == self.first_name)
+            )
             return len(set(row[0] for row in query)) == 1
         else:
             return False
@@ -214,12 +238,20 @@ class Contact(Base):
     @property
     def unambiguous_name(self):
         """The shortest unambiguous name of the contact (a string or :data:`None`)."""
-        return (self.first_name if self.first_name_is_unambiguous else self.full_name) or "Unknown"
+        return (
+            self.first_name if self.first_name_is_unambiguous else self.full_name
+        ) or "Unknown"
 
     def __repr__(self):
         """Render a human friendly representation of a :class:`Contact` object."""
         return friendly_repr(
-            self, "id", "account_id", "external_id", "full_name", "email_addresses", "telephone_numbers"
+            self,
+            "id",
+            "account_id",
+            "external_id",
+            "full_name",
+            "email_addresses",
+            "telephone_numbers",
         )
 
     def __str__(self):
@@ -264,7 +296,9 @@ class Conversation(Base):
     account = relationship(Account, back_populates="conversations")
     """The account that this conversation belongs to (an :class:`Account` object)."""
 
-    messages = relationship("Message", back_populates="conversation", order_by="Message.timestamp")
+    messages = relationship(
+        "Message", back_populates="conversation", order_by="Message.timestamp"
+    )
     """The chat messages that belong to this conversation."""
 
     @property
@@ -304,8 +338,16 @@ class Conversation(Base):
     def participants(self):
         """The :class:`Contact` objects that have participated in this conversation."""
         session = Session.object_session(self)
-        senders = session.query(Contact).join(Contact.sent_messages).filter(Message.conversation_id == self.id)
-        recipients = session.query(Contact).join(Contact.received_messages).filter(Message.conversation_id == self.id)
+        senders = (
+            session.query(Contact)
+            .join(Contact.sent_messages)
+            .filter(Message.conversation_id == self.id)
+        )
+        recipients = (
+            session.query(Contact)
+            .join(Contact.received_messages)
+            .filter(Message.conversation_id == self.id)
+        )
         return senders.union(recipients).all()
 
     def delete_messages(self):
@@ -345,7 +387,9 @@ class Message(Base):
     timestamp = Column(DateTime, index=True, nullable=False)
     """The timestamp of the chat message (a :class:`~datetime.datetime` value)."""
 
-    conversation_id = Column(Integer, ForeignKey(Conversation.id), index=True, nullable=False)
+    conversation_id = Column(
+        Integer, ForeignKey(Conversation.id), index=True, nullable=False
+    )
     """A foreign key to associate chat messages with conversations."""
 
     sender_id = Column(Integer, ForeignKey(Contact.id), index=True, nullable=True)
@@ -405,10 +449,14 @@ class Message(Base):
     conversation = relationship(Conversation, back_populates="messages")
     """The conversation that this chat message took place in (a :class:`Conversation` object or :data:`None`)."""
 
-    sender = relationship(Contact, back_populates="sent_messages", foreign_keys="Message.sender_id")
+    sender = relationship(
+        Contact, back_populates="sent_messages", foreign_keys="Message.sender_id"
+    )
     """The contact that sent the message (a :class:`Contact` object or :data:`None`)."""
 
-    recipient = relationship(Contact, back_populates="received_messages", foreign_keys="Message.recipient_id")
+    recipient = relationship(
+        Contact, back_populates="received_messages", foreign_keys="Message.recipient_id"
+    )
     """The contact that received the message (a :class:`Contact` object or :data:`None`)."""
 
     @property
@@ -461,7 +509,11 @@ class Message(Base):
     def __str__(self):
         """Render a human friendly representation of a :class:`Message` object."""
         if self.sender and self.text:
-            return "message by %s on %s: %s" % (self.sender, self.timestamp.strftime("%Y-%m-%d"), self.text)
+            return "message by %s on %s: %s" % (
+                self.sender,
+                self.timestamp.strftime("%Y-%m-%d"),
+                self.text,
+            )
         else:
             return "message: %s" % self.text
 
@@ -470,7 +522,9 @@ class Message(Base):
 # messages) is a rather slow process. The following composite index is
 # intended to speed things up a bit. For details about composite indexes
 # in SQLite please refer to https://www.sqlite.org/queryplanner.html.
-Index("ix_messages_conversation_id_timestamp", Message.conversation_id, Message.timestamp)
+Index(
+    "ix_messages_conversation_id_timestamp", Message.conversation_id, Message.timestamp
+)
 
 
 def friendly_repr(obj, *attributes):

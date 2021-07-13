@@ -22,7 +22,14 @@ from verboselogs import VerboseLogger
 # Modules included in our package.
 from chat_archive.backends import ChatArchiveBackend
 from chat_archive.database import SchemaManager
-from chat_archive.models import Account, Base, Contact, Conversation, EmailAddress, Message
+from chat_archive.models import (
+    Account,
+    Base,
+    Contact,
+    Conversation,
+    EmailAddress,
+    Message,
+)
 from chat_archive.utils import get_full_name
 
 DEFAULT_ACCOUNT_NAME = "default"
@@ -62,7 +69,10 @@ class ChatArchive(SchemaManager):
          'slack': 'chat_archive.backends.slack',
          'telegram': 'chat_archive.backends.telegram'}
         """
-        return dict((ep.name, ep.module_name) for ep in iter_entry_points("chat_archive.backends"))
+        return dict(
+            (ep.name, ep.module_name)
+            for ep in iter_entry_points("chat_archive.backends")
+        )
 
     @lazy_property
     def config(self):
@@ -117,15 +127,17 @@ class ChatArchive(SchemaManager):
         default value ``~/.local/share/chat-archive`` is used (where ``~`` is
         expanded to the profile directory of the current user).
         """
-        return parse_path(os.environ.get("CHAT_ARCHIVE_DIRECTORY", "~/.local/share/chat-archive"))
+        return parse_path(
+            os.environ.get("CHAT_ARCHIVE_DIRECTORY", "~/.local/share/chat-archive")
+        )
 
     @mutable_property
     def database_url(self):
         """URL for database."""
-        database_url = self.config.get('database-url')
+        database_url = self.config.get("database-url")
         if database_url:
             return database_url
-        return 'sqlite:///%s' % os.path.join(self.data_directory, "database.sqlite3")
+        return "sqlite:///%s" % os.path.join(self.data_directory, "database.sqlite3")
 
     @mutable_property
     def force(self):
@@ -153,7 +165,11 @@ class ChatArchive(SchemaManager):
     @property
     def num_html_messages(self):
         """The total number of chat messages with HTML formatting in the local archive (a number)."""
-        return self.session.query(func.count(Message.id)).filter(Message.html != None).scalar()
+        return (
+            self.session.query(func.count(Message.id))
+            .filter(Message.html != None)
+            .scalar()
+        )
 
     @property
     def num_messages(self):
@@ -198,12 +214,17 @@ class ChatArchive(SchemaManager):
 
     def get_accounts_from_database(self, backend_name):
         """Get the names of the accounts that are already in the database for the given backend."""
-        return [a.name for a in self.session.query(Account).filter(Account.backend == backend_name)]
+        return [
+            a.name
+            for a in self.session.query(Account).filter(Account.backend == backend_name)
+        ]
 
     def get_accounts_from_config(self, backend_name):
         """Get the names of the accounts configured for the given backend in the configuration file."""
         for section_name in self.config_loader.section_names:
-            configured_backend, configured_account = self.parse_account_expression(section_name)
+            configured_backend, configured_account = self.parse_account_expression(
+                section_name
+            )
             if backend_name == configured_backend:
                 yield configured_account or DEFAULT_ACCOUNT_NAME
 
@@ -243,9 +264,16 @@ class ChatArchive(SchemaManager):
         """
         module = self.load_backend_module(backend_name)
         for value in module.__dict__.values():
-            if isinstance(value, type) and issubclass(value, ChatArchiveBackend) and value is not ChatArchiveBackend:
+            if (
+                isinstance(value, type)
+                and issubclass(value, ChatArchiveBackend)
+                and value is not ChatArchiveBackend
+            ):
                 return value(
-                    account_name=account_name, archive=self, backend_name=backend_name, stats=self.import_stats
+                    account_name=account_name,
+                    archive=self,
+                    backend_name=backend_name,
+                    stats=self.import_stats,
                 )
         msg = "Failed to locate backend class! (%s)"
         raise Exception(msg % backend_name)
@@ -325,7 +353,9 @@ class ChatArchive(SchemaManager):
             # aggregate statistics collected about all backends together.
             with self.import_stats:
                 logger.info(
-                    "Synchronizing %s messages in %r account ..", self.get_backend_name(backend_name), account_name
+                    "Synchronizing %s messages in %r account ..",
+                    self.get_backend_name(backend_name),
+                    account_name,
                 )
                 self.initialize_backend(backend_name, account_name).synchronize()
         # Commit any outstanding database changes.
@@ -376,9 +406,13 @@ class BackendStats(object):
         if self.contacts_added > 0:
             additions.append(pluralize(self.contacts_added, "contact"))
         if self.email_addresses_added > 0:
-            additions.append(pluralize(self.contacts_added, "email address", "email addresses"))
+            additions.append(
+                pluralize(self.contacts_added, "email address", "email addresses")
+            )
         if self.telephone_numbers_added > 0:
-            additions.append(pluralize(self.telephone_numbers_added, "telephone number"))
+            additions.append(
+                pluralize(self.telephone_numbers_added, "telephone number")
+            )
         if additions:
             logger.info("Imported %s.", concatenate(additions))
 

@@ -39,7 +39,10 @@ class SlackBackend(ChatArchiveBackend):
     def api_token(self):
         """The Slack API token (a string)."""
         return get_secret(
-            options=self.config, value_option="api-token", name_option="api-token-name", description="Slack API token"
+            options=self.config,
+            value_option="api-token",
+            name_option="api-token-name",
+            description="Slack API token",
         )
 
     @lazy_property
@@ -95,10 +98,15 @@ class SlackBackend(ChatArchiveBackend):
         num_ims = len(response.body["ims"])
         for i, dm in enumerate(response.body["ims"], start=1):
             progress = "%i/%i" % (i, num_ims)
-            logger.verbose("Synchronizing direct message channel %s (%s) ..", progress, dm["id"])
+            logger.verbose(
+                "Synchronizing direct message channel %s (%s) ..", progress, dm["id"]
+            )
             self.spinner.label = "Synchronizing direct message channel %s" % progress
             self.import_messages(
-                self.client.im, self.get_or_create_conversation(external_id=dm["id"], is_group_conversation=False)
+                self.client.im,
+                self.get_or_create_conversation(
+                    external_id=dm["id"], is_group_conversation=False
+                ),
             )
 
     def synchronize_channels(self):
@@ -106,7 +114,9 @@ class SlackBackend(ChatArchiveBackend):
         response = self.client.channels.list()
         num_channels = len(response.body["channels"])
         for i, channel in enumerate(response.body["channels"], start=1):
-            logger.verbose("Synchronizing #%s channel (%s) ..", channel["name"], channel["id"])
+            logger.verbose(
+                "Synchronizing #%s channel (%s) ..", channel["name"], channel["id"]
+            )
             self.spinner.label = "Synchronizing channel %s: %s" % (
                 "%i/%i" % (i, num_channels),
                 ansi_wrap("#%s" % channel["name"], color=HIGHLIGHT_COLOR),
@@ -114,7 +124,9 @@ class SlackBackend(ChatArchiveBackend):
             self.import_messages(
                 self.client.channels,
                 self.get_or_create_conversation(
-                    external_id=channel["id"], is_group_conversation=True, name=("#" + channel["name"])
+                    external_id=channel["id"],
+                    is_group_conversation=True,
+                    name=("#" + channel["name"]),
                 ),
             )
 
@@ -125,7 +137,9 @@ class SlackBackend(ChatArchiveBackend):
         if conversation_in_db.import_complete and conversation_in_db.newest_message:
             oldest = conversation_in_db.newest_message.external_id
             logger.verbose("Searching for messages newer than %s ..", oldest)
-        for message in self.get_history(source, conversation_in_db.external_id, oldest=oldest):
+        for message in self.get_history(
+            source, conversation_in_db.external_id, oldest=oldest
+        ):
             # We perform a lightweight check for previously imported messages
             # before processing the message text to avoid unnecessary work.
             if not self.have_message(conversation_in_db, message["ts"]):
@@ -153,8 +167,13 @@ class SlackBackend(ChatArchiveBackend):
                 page_size,
             )
             self.spinner.step()
-            response = source.history(channel=channel_id, latest=latest, oldest=oldest, count=page_size)
-            logger.verbose("Processing response with %s message(s) ..", len(response.body["messages"]))
+            response = source.history(
+                channel=channel_id, latest=latest, oldest=oldest, count=page_size
+            )
+            logger.verbose(
+                "Processing response with %s message(s) ..",
+                len(response.body["messages"]),
+            )
             for message in response.body["messages"]:
                 # We use decimals instead of floats to avoid rounding errors.
                 message_ts = decimal.Decimal(message["ts"])
@@ -167,11 +186,16 @@ class SlackBackend(ChatArchiveBackend):
                     if latest is None or message_ts < decimal.Decimal(latest):
                         latest = message["ts"]
                 # Only user generated messages are import.
-                if message["type"] == "message" and message.get("subtype") != "bot_message":
+                if (
+                    message["type"] == "message"
+                    and message.get("subtype") != "bot_message"
+                ):
                     self.spinner.step()
                     yield message
             if not self.is_limited and response.body.get("is_limited", False):
-                logger.notice("Conversation history is being limited by Slack's free plan.")
+                logger.notice(
+                    "Conversation history is being limited by Slack's free plan."
+                )
                 self.is_limited = True
             if not response.body["has_more"]:
                 break
@@ -249,9 +273,15 @@ class HTMLConverter(object):
     def parse_preformatted(self, input, index, length, output):
         """Parse `pre-formatted` text."""
         if not self.preceded_by_alphanumeric(input, index):
-            if index + 2 < length and input[index + 1] == "`" and input[index + 2] == "`":
+            if (
+                index + 2 < length
+                and input[index + 1] == "`"
+                and input[index + 2] == "`"
+            ):
                 match = input.find("```", index + 3)
-                if match > 0 and not self.followed_by_alphanumeric(input, match + 2, length):
+                if match > 0 and not self.followed_by_alphanumeric(
+                    input, match + 2, length
+                ):
                     output.append("<pre>")
                     nested = input[index + 3 : match].strip("\r\n")
                     self.parse_preformatted_body(nested, 0, len(nested), output)
@@ -259,7 +289,9 @@ class HTMLConverter(object):
                     return match + 3
             else:
                 match = input.find("`", index + 1)
-                if match > 0 and not self.followed_by_alphanumeric(input, match, length):
+                if match > 0 and not self.followed_by_alphanumeric(
+                    input, match, length
+                ):
                     output.append("<code>")
                     nested = input[index + 1 : match]
                     self.parse_preformatted_body(nested, 0, len(nested), output)

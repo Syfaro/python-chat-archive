@@ -65,8 +65,12 @@ def get_secret(options, value_option, name_option, description):
         logger.debug("Getting password from configuration option %r ..", value_option)
         return options[value_option]
     elif name_option in options:
-        logger.debug("Getting password from password store (%s) ..", options[name_option])
-        return get_secret_from_store(name=options[name_option], directory=options.get("password-store"))
+        logger.debug(
+            "Getting password from password store (%s) ..", options[name_option]
+        )
+        return get_secret_from_store(
+            name=options[name_option], directory=options.get("password-store")
+        )
     else:
         logger.debug("Prompting operator for interactive password entry ..")
         return prompt_for_password("Please enter %s: " % description)
@@ -106,5 +110,7 @@ def strip_tzinfo(value):
 def utc_to_local(utc_value):
     """Convert a UTC :class:`~datetime.datetime` object to the local timezone."""
     epoch = time.mktime(utc_value.timetuple())
-    offset = datetime.datetime.fromtimestamp(epoch) - datetime.datetime.utcfromtimestamp(epoch)
+    offset = datetime.datetime.fromtimestamp(
+        epoch
+    ) - datetime.datetime.utcfromtimestamp(epoch)
     return utc_value + offset

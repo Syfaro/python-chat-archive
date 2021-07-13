@@ -54,7 +54,9 @@ search for the Google redirect service regardless of whether a given
 URL is using the ``http://`` or ``https://`` scheme.
 """
 
-URL_PATTERN = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
+URL_PATTERN = re.compile(
+    "http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
+)
 """
 A compiled regular expression pattern to find URLs in text
 (credit: taken from `urlregex.com <http://urlregex.com/>`_).
@@ -128,7 +130,9 @@ class RedirectStripper(html.parser.HTMLParser):
         html_fragment = "&#%s;" % value
         if self.link_active:
             self.link_html.append(html_fragment)
-            self.link_text.append(chr(int(value[1:], 16) if value.startswith("x") else int(value)))
+            self.link_text.append(
+                chr(int(value[1:], 16) if value.startswith("x") else int(value))
+            )
         else:
             self.output.write(html_fragment)
 

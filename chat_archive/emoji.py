@@ -37,7 +37,9 @@ WHITE_TO_EMOJI_MAPPING = {"☺": "🙂", "😊︎": "😊️", "😐︎": "😐�
 # Compile regular expressions that we can use to find the keys in the
 # dictionaries above and replace them with the corresponding values.
 TEXT_TO_EMOJI_PATTERN = re.compile(
-    r"(?:^|(?<=\s))(?:%s)(?=(?:\s|$))" % "|".join(map(re.escape, TEXT_TO_EMOJI_MAPPING)), re.IGNORECASE
+    r"(?:^|(?<=\s))(?:%s)(?=(?:\s|$))"
+    % "|".join(map(re.escape, TEXT_TO_EMOJI_MAPPING)),
+    re.IGNORECASE,
 )
 WHITE_TO_EMOJI_PATTERN = re.compile("|".join(WHITE_TO_EMOJI_MAPPING))
 

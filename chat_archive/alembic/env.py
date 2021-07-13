@@ -60,7 +60,9 @@ def run_migrations_offline(**options):
 def run_migrations_online(**options):
     """Run migrations in 'online' mode."""
     connectable = engine_from_config(
-        context.config.get_section(context.config.config_ini_section), prefix="sqlalchemy.", poolclass=pool.NullPool
+        context.config.get_section(context.config.config_ini_section),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
         context.configure(

@@ -41,23 +41,26 @@ class ChatArchiveTestCase(TestCase):
     """Container for the `chat-archive` tests."""
 
     def get_test_archive(self):
-        return ChatArchive(database_url='sqlite:///:memory:')
+        return ChatArchive(database_url="sqlite:///:memory:")
 
     def test_expand_url(self):
         """Test the :func:`~chat_archive.html.redirects.expand_url()` function."""
-        target_url = 'https://www.python.org/'
-        for scheme in 'http', 'https':
-            redirect_url = '%s://www.google.com/url?q=%s' % (scheme, urllib.parse.quote(target_url))
+        target_url = "https://www.python.org/"
+        for scheme in "http", "https":
+            redirect_url = "%s://www.google.com/url?q=%s" % (
+                scheme,
+                urllib.parse.quote(target_url),
+            )
             assert expand_url(redirect_url) == target_url
 
     def test_backend_discovery(self):
         """Test the discovery of backends through entry points."""
         archive = self.get_test_archive()
         assert len(archive.backends) >= 4
-        assert 'gtalk' in archive.backends
-        assert 'hangouts' in archive.backends
-        assert 'slack' in archive.backends
-        assert 'telegram' in archive.backends
+        assert "gtalk" in archive.backends
+        assert "hangouts" in archive.backends
+        assert "slack" in archive.backends
+        assert "telegram" in archive.backends
 
     def test_backend_loading(self):
         """Test the importing of backend modules."""

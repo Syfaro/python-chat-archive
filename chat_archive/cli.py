@@ -87,9 +87,24 @@ import sys
 
 # External dependencies.
 import coloredlogs
-from humanfriendly import coerce_boolean, compact, concatenate, format_path, format_size, parse_path, pluralize
+from humanfriendly import (
+    coerce_boolean,
+    compact,
+    concatenate,
+    format_path,
+    format_size,
+    parse_path,
+    pluralize,
+)
 from humanfriendly.prompts import prompt_for_input
-from humanfriendly.terminal import HTMLConverter, connected_to_terminal, find_terminal_size, output, usage, warning
+from humanfriendly.terminal import (
+    HTMLConverter,
+    connected_to_terminal,
+    find_terminal_size,
+    output,
+    usage,
+    warning,
+)
 from property_manager import lazy_property, mutable_property
 from sqlalchemy import func
 from verboselogs import VerboseLogger
@@ -153,7 +168,8 @@ def main():
                 handler = logging.FileHandler(parse_path(value))
                 handler.setFormatter(
                     logging.Formatter(
-                        fmt="%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+                        fmt="%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s",
+                        datefmt="%Y-%m-%d %H:%M:%S",
                     )
                 )
                 handler.setLevel(logging.DEBUG)
@@ -161,7 +177,9 @@ def main():
                 logging.root.setLevel(logging.NOTSET)
             elif option in ("-c", "--color", "--colour"):
                 mapping = dict(always=True, never=False)
-                program_opts["use_colors"] = mapping[value] if value in mapping else coerce_boolean(value)
+                program_opts["use_colors"] = (
+                    mapping[value] if value in mapping else coerce_boolean(value)
+                )
             elif option in ("-p", "--profile"):
                 program_opts["profile_file"] = parse_path(value)
             elif option in ("-v", "--verbose"):
@@ -240,7 +258,10 @@ class UserInterface(ChatArchive):
     @lazy_property
     def keyword_highlighter(self):
         """A :class:`.KeywordHighlighter` object based on :attr:`keywords`."""
-        return KeywordHighlighter(highlight_template=FORMATTING_TEMPLATES["keyword_highlight"], keywords=self.keywords)
+        return KeywordHighlighter(
+            highlight_template=FORMATTING_TEMPLATES["keyword_highlight"],
+            keywords=self.keywords,
+        )
 
     @mutable_property
     def keywords(self):
@@ -272,12 +293,20 @@ class UserInterface(ChatArchive):
         logger.info(
             " - Size of %s: %s",
             pluralize(self.num_messages, "plain text chat message"),
-            format_size(self.session.query(func.coalesce(func.sum(func.length(Message.text)), 0)).scalar()),
+            format_size(
+                self.session.query(
+                    func.coalesce(func.sum(func.length(Message.text)), 0)
+                ).scalar()
+            ),
         )
         logger.info(
             " - Size of %s: %s",
             pluralize(self.num_html_messages, "HTML formatted chat message"),
-            format_size(self.session.query(func.coalesce(func.sum(func.length(Message.html)), 0)).scalar()),
+            format_size(
+                self.session.query(
+                    func.coalesce(func.sum(func.length(Message.html)), 0)
+                ).scalar()
+            ),
         )
 
     def sync_cmd(self, arguments):
@@ -291,11 +320,18 @@ class UserInterface(ChatArchive):
         to associate the messages with.
         """
         logger.info("Searching for private conversations with unknown sender ..")
-        for conversation in self.session.query(Conversation).filter(Conversation.is_group_conversation == False):
+        for conversation in self.session.query(Conversation).filter(
+            Conversation.is_group_conversation == False
+        ):
             if conversation.have_unknown_senders:
-                logger.info("Private conversation %i includes messages from unknown senders:", conversation.id)
+                logger.info(
+                    "Private conversation %i includes messages from unknown senders:",
+                    conversation.id,
+                )
                 self.render_messages(conversation.messages[:10])
-                full_name = prompt_for_input("Name for new contact (leave empty to skip): ")
+                full_name = prompt_for_input(
+                    "Name for new contact (leave empty to skip): "
+                )
                 if full_name:
                     words = full_name.split()
                     kw = dict(account=conversation.account, first_name=words.pop(0))
@@ -328,7 +364,9 @@ class UserInterface(ChatArchive):
         related = []
         for msg in messages:
             # Gather older messages.
-            older_query = msg.older_messages.order_by(Message.timestamp.desc()).limit(self.context)
+            older_query = msg.older_messages.order_by(Message.timestamp.desc()).limit(
+                self.context
+            )
             logger.debug("Querying older messages: %s", older_query)
             for other_msg in reversed(older_query.all()):
                 if other_msg not in related:
@@ -339,7 +377,9 @@ class UserInterface(ChatArchive):
                 related.append(msg)
                 yield msg
             # Gather newer messages.
-            newer_query = msg.newer_messages.order_by(Message.timestamp).limit(self.context)
+            newer_query = msg.newer_messages.order_by(Message.timestamp).limit(
+                self.context
+            )
             logger.debug("Querying newer messages: %s", newer_query)
             for other_msg in newer_query.all():
                 if other_msg not in related:
@@ -352,7 +392,9 @@ class UserInterface(ChatArchive):
         previous_message = None
         # Render a horizontal bar as a delimiter between conversations.
         num_rows, num_columns = find_terminal_size()
-        conversation_delimiter = self.generate_html("conversation_delimiter", "─" * num_columns)
+        conversation_delimiter = self.generate_html(
+            "conversation_delimiter", "─" * num_columns
+        )
         for i, msg in enumerate(messages):
             if msg.conversation != previous_conversation:
                 # Mark context switches between conversations.
@@ -365,9 +407,13 @@ class UserInterface(ChatArchive):
                 # heavy check so we only do this when rendering search results.
                 distance = msg.find_distance(previous_message)
                 if distance > 0:
-                    message_delimiter = "── %s omitted " % pluralize(distance, "message")
+                    message_delimiter = "── %s omitted " % pluralize(
+                        distance, "message"
+                    )
                     message_delimiter += "─" * int(num_columns - len(message_delimiter))
-                    self.render_output(self.generate_html("message_delimiter", message_delimiter))
+                    self.render_output(
+                        self.generate_html("message_delimiter", message_delimiter)
+                    )
             # We convert the message metadata and the message text separately,
             # to avoid that a chat message whose HTML contains a single <p> tag
             # causes two newlines to be emitted in between the message metadata
@@ -381,7 +427,9 @@ class UserInterface(ChatArchive):
                     ]
                 )
             )
-            message_contents = self.normalize_whitespace(self.prepare_output(self.render_text(msg)))
+            message_contents = self.normalize_whitespace(
+                self.prepare_output(self.render_text(msg))
+            )
             output(message_metadata + " " + message_contents)
             # Keep track of the previous conversation and message.
             previous_conversation = msg.conversation
@@ -438,7 +486,9 @@ class UserInterface(ChatArchive):
             "chat",
         ]
         if conversation.name:
-            parts.append(self.generate_html("conversation_name", html.escape(conversation.name)))
+            parts.append(
+                self.generate_html("conversation_name", html.escape(conversation.name))
+            )
         parts.append("with")
         participants_html = concatenate(map(html.escape, participants))
         if conversation.is_group_conversation:
@@ -516,11 +566,15 @@ class UserInterface(ChatArchive):
 
     def render_text(self, message):
         """Prepare the text of a chat message for rendering on the terminal."""
-        return self.redirect_stripper(message.html or text_to_html(message.text, callback=normalize_emoji))
+        return self.redirect_stripper(
+            message.html or text_to_html(message.text, callback=normalize_emoji)
+        )
 
     def render_timestamp(self, value):
         """Render a human friendly representation of a timestamp."""
-        return self.generate_html("message_timestamp", utc_to_local(value).strftime(self.timestamp_format))
+        return self.generate_html(
+            "message_timestamp", utc_to_local(value).strftime(self.timestamp_format)
+        )
 
     def render_backend(self, value):
         """Render a human friendly representation of a chat message backend."""

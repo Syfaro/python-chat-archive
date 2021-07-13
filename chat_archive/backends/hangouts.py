@@ -21,7 +21,12 @@ from hangups.conversation_event import ChatMessageEvent
 from hangups.hangouts_pb2 import CONVERSATION_TYPE_GROUP
 from hangups.user import DEFAULT_NAME
 from humanfriendly import Timer, concatenate, format_timespan, pluralize
-from property_manager import PropertyManager, lazy_property, mutable_property, required_property
+from property_manager import (
+    PropertyManager,
+    lazy_property,
+    mutable_property,
+    required_property,
+)
 from verboselogs import VerboseLogger
 
 # Modules included in our package.
@@ -63,7 +68,9 @@ class HangoutsBackend(ChatArchiveBackend):
     @mutable_property
     def cookie_file(self):
         """The pathname of the ``*.json`` file with cached credentials (a string)."""
-        return os.path.join(self.archive.data_directory, "hangouts", "%s.json" % self.account_name)
+        return os.path.join(
+            self.archive.data_directory, "hangouts", "%s.json" % self.account_name
+        )
 
     @lazy_property
     def client(self):
@@ -104,7 +111,9 @@ class HangoutsBackend(ChatArchiveBackend):
         logger.verbose("Waiting for connect task to succeed ..")
         on_connect = asyncio.Future()
         self.client.on_connect.add_observer(lambda: on_connect.set_result(None))
-        done, _ = await asyncio.wait((on_connect, task), return_when=asyncio.FIRST_COMPLETED)
+        done, _ = await asyncio.wait(
+            (on_connect, task), return_when=asyncio.FIRST_COMPLETED
+        )
         await asyncio.gather(*done)
         logger.verbose("Finished waiting for connection.")
         # Run the synchronization coroutine. Afterwards, disconnect hangups
@@ -112,7 +121,9 @@ class HangoutsBackend(ChatArchiveBackend):
         try:
             # Get the user and conversation lists.
             logger.verbose("Building user / conversation list ..")
-            user_list, conversation_list = await hangups.build_user_conversation_list(self.client)
+            user_list, conversation_list = await hangups.build_user_conversation_list(
+                self.client
+            )
             self.download_all_contacts(user_list)
             await self.download_all_conversations(conversation_list)
             self.stats.show()
@@ -130,7 +141,9 @@ class HangoutsBackend(ChatArchiveBackend):
                 self.bogus_user_ids.add(user.id_.gaia_id)
             else:
                 self.get_or_create_contact(
-                    email_addresses=user.emails, external_id=user.id_.gaia_id, full_name=user.full_name
+                    email_addresses=user.emails,
+                    external_id=user.id_.gaia_id,
+                    full_name=user.full_name,
                 )
 
     async def download_all_conversations(self, conversation_list):
@@ -140,7 +153,10 @@ class HangoutsBackend(ChatArchiveBackend):
             try:
                 await self.download_conversation(conversation)
             except Exception:
-                logger.warning("Skipping conversation due to synchronization error ..", exc_info=True)
+                logger.warning(
+                    "Skipping conversation due to synchronization error ..",
+                    exc_info=True,
+                )
                 self.stats.failed_conversations += 1
             self.stats.show()
         summary = []
@@ -151,7 +167,9 @@ class HangoutsBackend(ChatArchiveBackend):
         if summary:
             logger.info("Added %s in %s.", concatenate(summary), timer)
         else:
-            logger.info("No new conversations or messages found (took %s to check).", timer)
+            logger.info(
+                "No new conversations or messages found (took %s to check).", timer
+            )
         if self.stats.failed_conversations > 0:
             logger.warning(
                 "Skipped %s due to synchronization %s!",
@@ -175,12 +193,16 @@ class HangoutsBackend(ChatArchiveBackend):
         conversation_in_db = self.get_or_create_conversation(
             external_id=conversation.id_,
             import_complete=False,
-            is_group_conversation=(conversation._conversation.type == CONVERSATION_TYPE_GROUP),
+            is_group_conversation=(
+                conversation._conversation.type == CONVERSATION_TYPE_GROUP
+            ),
             last_modified=last_modified,
             import_errors=False,
         )
         if conversation_in_db.import_errors and not self.archive.force:
-            logger.verbose("Skipping conversation with synchronization errors (use --force to override).")
+            logger.verbose(
+                "Skipping conversation with synchronization errors (use --force to override)."
+            )
             self.stats.skipped_conversations += 1
         elif conversation_in_db.import_complete:
             logger.verbose("Checking if conversation has been updated ..")
@@ -198,7 +220,9 @@ class HangoutsBackend(ChatArchiveBackend):
         oldest_message = conversation_in_db.oldest_message
         if oldest_message:
             logger.info("Resuming initial synchronization of conversation ..")
-            await self.handle_import_errors(conversation, conversation_in_db, oldest_message.external_id)
+            await self.handle_import_errors(
+                conversation, conversation_in_db, oldest_message.external_id
+            )
         else:
             logger.info("Starting initial synchronization of conversation ..")
             await self.handle_import_errors(conversation, conversation_in_db)
@@ -207,11 +231,15 @@ class HangoutsBackend(ChatArchiveBackend):
         conversation_in_db.import_complete = True
         self.archive.commit_changes()
 
-    async def handle_import_errors(self, conversation, conversation_in_db, event_id=None):
+    async def handle_import_errors(
+        self, conversation, conversation_in_db, event_id=None
+    ):
         """Download messages in a conversation, handling synchronization errors."""
         try:
             with self.stats:
-                await self.download_all_messages(conversation, conversation_in_db, event_id)
+                await self.download_all_messages(
+                    conversation, conversation_in_db, event_id
+                )
         except Exception:
             # Remember that we encountered a synchronization error for this conversation.
             conversation_in_db.import_errors = True
@@ -221,7 +249,9 @@ class HangoutsBackend(ChatArchiveBackend):
             # Forget about previous synchronization errors.
             conversation_in_db.import_errors = False
 
-    async def download_all_messages(self, conversation, conversation_in_db, event_id=None):
+    async def download_all_messages(
+        self, conversation, conversation_in_db, event_id=None
+    ):
         """Download the messages in a specific Hangouts conversation."""
         while True:
             downloaded_messages = []
@@ -231,11 +261,15 @@ class HangoutsBackend(ChatArchiveBackend):
                 if isinstance(event, ChatMessageEvent):
                     downloaded_messages.append(event)
                 else:
-                    logger.verbose("Ignoring unsupported message type (%s) ..", type(event))
+                    logger.verbose(
+                        "Ignoring unsupported message type (%s) ..", type(event)
+                    )
             # Process the messages in reverse chronological order because this
             # is how the Google Hangouts API works and staying as consistent
             # as possible with that should guarantee that we don't cause gaps.
-            for event in sorted(downloaded_messages, key=lambda e: event.timestamp, reverse=True):
+            for event in sorted(
+                downloaded_messages, key=lambda e: event.timestamp, reverse=True
+            ):
                 attributes = dict(
                     conversation=conversation_in_db,
                     external_id=event.id_,
@@ -246,7 +280,9 @@ class HangoutsBackend(ChatArchiveBackend):
                 # Messages from unknown senders (without unique identification)
                 # are stored in the local database without an associated contact.
                 if event.user_id.gaia_id not in self.bogus_user_ids:
-                    attributes["sender"] = self.find_contact_by_external_id(event.user_id.gaia_id)
+                    attributes["sender"] = self.find_contact_by_external_id(
+                        event.user_id.gaia_id
+                    )
                 created, message = self.get_or_create_message(**attributes)
                 if created:
                     new_messages.append(message)
@@ -291,7 +327,10 @@ class HangoutsBackend(ChatArchiveBackend):
                     time.sleep(back_off)
                     back_off = min(back_off * 2, 10)
                 else:
-                    logger.warning("Giving up on conversation after %i failed requests!", request_nr)
+                    logger.warning(
+                        "Giving up on conversation after %i failed requests!",
+                        request_nr,
+                    )
                     raise
 
     def get_message_html(self, event):

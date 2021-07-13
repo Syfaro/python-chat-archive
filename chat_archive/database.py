@@ -16,7 +16,13 @@ from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from coloredlogs import get_level, set_level
 from humanfriendly import Timer
-from property_manager import PropertyManager, cached_property, lazy_property, required_property, writable_property
+from property_manager import (
+    PropertyManager,
+    cached_property,
+    lazy_property,
+    required_property,
+    writable_property,
+)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from verboselogs import VerboseLogger
@@ -103,7 +109,9 @@ class SchemaManager(DatabaseClient):
                 self.run_migrations()
             if self.auto_create_schema and first_run:
                 self.initialize_schema()
-            logger.verbose("Took %s to initialize and/or upgrade database schema.", timer)
+            logger.verbose(
+                "Took %s to initialize and/or upgrade database schema.", timer
+            )
 
     @lazy_property
     def alembic_config(self):
@@ -169,7 +177,9 @@ class SchemaManager(DatabaseClient):
         logger.debug("Finding Alembic head revision ..")
         migrations = ScriptDirectory.from_config(self.alembic_config)
         revision = migrations.get_current_head()
-        logger.verbose("Current head (code base) database schema revision is %s.", revision)
+        logger.verbose(
+            "Current head (code base) database schema revision is %s.", revision
+        )
         return revision
 
     @property
@@ -209,7 +219,9 @@ class SchemaManager(DatabaseClient):
             timer = Timer()
             logger.verbose("Checking whether database needs upgrading ..")
             if not self.current_schema_revision:
-                logger.verbose("Stamping empty database with current schema revision ..")
+                logger.verbose(
+                    "Stamping empty database with current schema revision .."
+                )
                 with CustomVerbosity(level="warning"):
                     stamp(self.alembic_config, "head")
                 logger.success("Stamped initial database schema revision in %s.", timer)
@@ -223,7 +235,9 @@ class SchemaManager(DatabaseClient):
                 # Invalidate cached property.
                 del self.current_schema_revision
             else:
-                logger.verbose("Database schema already up to date! (took %s to check)", timer)
+                logger.verbose(
+                    "Database schema already up to date! (took %s to check)", timer
+                )
 
 
 class CustomVerbosity(PropertyManager):

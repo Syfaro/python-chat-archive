@@ -121,7 +121,7 @@ Supported commands:
    errors during every synchronization run :-)."
    "``-c``, ``--color=CHOICE,`` ``--colour=CHOICE``","Specify whether ANSI escape sequences for text and background colors and
    text styles are to be used or not, depending on the value of ``CHOICE``:
-   
+
    - The values 'always', 'true', 'yes' and '1' enable colors.
    - The values 'never', 'false', 'no' and '0' disable colors.
    - When the value is 'auto' (this is the default) then colors will
@@ -286,16 +286,16 @@ user specific configuration files override system wide configuration files.
 .. [[[end]]]
 
 The special configuration file section ``chat-archive`` defines general
-options. Right now only the ``operator-name`` option is supported here. All
-other sections are specific to a chat account and encode the name of the
-backend and the name of the account in the name of the section by delimiting
-the two values with a colon. Here's an example based on my configuration, that
-shows the supported options:
+options. All other sections are specific to a chat account and encode the name
+of the backend and the name of the account in the name of the section by
+delimiting the two values with a colon. Here's an example based on my
+configuration, that shows the supported options:
 
 .. code-block:: ini
 
    [chat-archive]
    operator-name = ...
+   database-url = ...
 
    [hangouts:work]
    email-address = ...

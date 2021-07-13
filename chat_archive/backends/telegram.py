@@ -109,7 +109,7 @@ class TelegramBackend(ChatArchiveBackend):
             if not self.dialog_to_ignore(dialog):
                 is_group_conversation = self.is_group_conversation(dialog)
                 conversation_in_db = self.get_or_create_conversation(
-                    external_id=dialog.id,
+                    external_id=str(dialog.id),
                     is_group_conversation=is_group_conversation,
                     last_modified=dialog.date,
                     # In Telegram the name of a private chat is the name of
@@ -207,7 +207,7 @@ class TelegramBackend(ChatArchiveBackend):
                 if message.message:
                     self.get_or_create_message(
                         conversation=conversation_in_db,
-                        external_id=message.id,
+                        external_id=str(message.id),
                         html=unparse(message.message, message.entities),
                         recipient=self.recipient_to_contact(message.to_id),
                         sender=self.sender_to_contact(message.sender),
@@ -224,9 +224,9 @@ class TelegramBackend(ChatArchiveBackend):
             # It's possible for senders to not be users.
             return None
         return self.get_or_create_contact(
-            external_id=user.id, first_name=user.first_name, last_name=user.last_name, telephone_number=user.phone
+            external_id=str(user.id), first_name=user.first_name, last_name=user.last_name, telephone_number=user.phone
         )
 
     def recipient_to_contact(self, to_id):
         """Create a contact in our local database for the given ``to_id`` value."""
-        return self.find_contact_by_external_id(to_id.user_id) if hasattr(to_id, "user_id") else None
+        return self.find_contact_by_external_id(str(to_id.user_id)) if hasattr(to_id, "user_id") else None

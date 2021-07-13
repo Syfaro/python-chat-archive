@@ -1,0 +1,46 @@
+[tool.poetry]
+authors = ["Peter Odding <peter@peterodding.com>"]
+description = "Easy to use offline chat archive"
+license = "MIT"
+name = "chat-archive"
+version = "4.1.0"
+
+[tool.poetry.dependencies]
+SQLAlchemy = "^1.4.20"
+Telethon = "^1.23.0"
+alembic = "^1.6.5"
+coloredlogs = "^15.0.1"
+emoji = "^1.2.0"
+hangups = "^0.4.14"
+humanfriendly = "^9.2"
+property-manager = "^3.0"
+psycopg2 = {version = "^2.9.1", optional = true}
+python = "^3.7"
+qpass = "^2.3"
+slacker = "^0.14.0"
+update-dotdee = "^6.0"
+verboselogs = "^1.7"
+
+[tool.poetry.dev-dependencies]
+flake8 = "^3.9.2"
+flake8-docstrings = "^1.6.0"
+pyflakes = "^2.3.1"
+pytest = "^6.2.4"
+pytest-cov = "^2.12.1"
+black = {version = "^21.6b0", allow-prereleases = true}
+
+[tool.poetry.extras]
+postgres = ["psycopg2"]
+
+[tool.poetry.scripts]
+chat-archive = 'chat_archive.cli:main'
+
+[tool.poetry.plugins."chat_archive.backends"]
+gtalk = "chat_archive.backends.gtalk"
+hangouts = "chat_archive.backends.hangouts"
+slack = "chat_archive.backends.slack"
+telegram = "chat_archive.backends.telegram"
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
